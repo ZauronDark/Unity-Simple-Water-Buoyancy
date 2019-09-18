@@ -40,7 +40,8 @@ public class Buoyancy : MonoBehaviour
     // --- private var ---
 
     private Rigidbody rb;
-    private float newYValue;
+    private float newYValue, underWaterBuoyantForce;
+    private bool inWater;
 
 
 
@@ -50,6 +51,21 @@ public class Buoyancy : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+    }
+
+    //with this you can set under water buoyancy force power from your other scripts, 0f to 1f for the best result.
+    //assuming buoyantForce is low enough to sink object under water when depthPowerLimit is 0f, so you can control when to sink and float through other scripts.
+    public void SetPower(float value)
+    {
+        depthPowerLimit = value;
+    }
+
+    //again Remember to set buoyantForce low enough to sink object under water when depthPowerLimit is 0f and float with when depthPowerLimit is 1f, otherwise this wont work.
+    //this checks if underwater pressue is low that means sinking, returns true.
+    //room for improvements, currently junky.
+    public bool IsUnderWater()
+    {
+        return inWater ? underWaterBuoyantForce < 0.5f ? false : true : false;
     }
 
 
@@ -67,8 +83,15 @@ public class Buoyancy : MonoBehaviour
             newYValue = transform.position.y + offsetY;
             if (newYValue < water.bounds.max.y)
             {
-                rb.AddForce(0f, buoyantForce + (buoyantForce * rb.mass * Mathf.Clamp01((water.bounds.max.y - newYValue) * depthPowerLimit)), 0f);
+                underWaterBuoyantForce = Mathf.Clamp01((water.bounds.max.y - newYValue) * depthPowerLimit);
+                rb.AddForce(0f, buoyantForce + (buoyantForce * rb.mass * underWaterBuoyantForce), 0f);
                 //values may prone to errors.
+
+                if (!inWater) inWater = true;
+            }
+            else
+            {
+                if (inWater) inWater = false;
             }
         }
     }
