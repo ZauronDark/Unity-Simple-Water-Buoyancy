@@ -81,7 +81,11 @@ public class Buoyancy : MonoBehaviour
         if (water.gameObject.tag == waterVolumeTag)
         {
             newYValue = transform.position.y + offsetY;
-            if (newYValue < water.bounds.max.y)
+            if (newYValue < water.bounds.max.y
+            && transform.localPosition.x < water.bounds.max.x
+            && transform.localPosition.z < water.bounds.max.z
+            && transform.localPosition.x > water.bounds.min.x
+            && transform.localPosition.z > water.bounds.min.z)
             {
                 underWaterBuoyantForce = Mathf.Clamp01((water.bounds.max.y - newYValue) * depthPowerLimit);
                 rb.AddForce(0f, buoyantForce + (buoyantForce * rb.mass * underWaterBuoyantForce), 0f);
