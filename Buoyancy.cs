@@ -49,8 +49,9 @@ public class Buoyancy : MonoBehaviour
     private Rigidbody rb;
     private Collider coll;
     private WaterBody waterBody;
-    private float objectYValue, underWaterBuoyantForce, yBound, buoyantForceMass, buoyency;
+    private float yBound;
     private bool isWaterBodySet;
+    private int waterCount;
 
 
 
@@ -61,6 +62,15 @@ public class Buoyancy : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         coll = GetComponent<Collider>();
+    }
+
+    private void Update()
+    {
+        if (waterCount == 0)
+        {
+            waterBody = null;
+            isWaterBodySet = false;
+        }
     }
 
 
@@ -74,18 +84,23 @@ public class Buoyancy : MonoBehaviour
         if (value >= 0f && value <= 1f) depthPower = value;
     }
 
-    public ref readonly float GetDepthPower() => ref depthPower;
+    public float GetDepthPower() => depthPower;
 
     //if this object fully submerged into water, returns true.
-    public bool IsUnderWater() => yBound > coll.bounds.max.y;
+    public bool IsUnderWater() => isWaterBodySet && yBound > coll.bounds.max.y;
 
     //if this object floating on surface of water, returns true.
-    public bool IsFloating() => yBound > coll.bounds.center.y + offsetY && !IsUnderWater();
+    public bool IsFloating() => isWaterBodySet && !(yBound > coll.bounds.max.y);
 
 
 
     //  ▀▄▀▄▀▄ Trigger Functions ▄▀▄▀▄▀
 
+
+    private void OnTriggerEnter(Collider water)
+    {
+        if (water.CompareTag(waterVolumeTag)) waterCount++;
+    }
 
     private void OnTriggerStay(Collider water)
     {
@@ -97,6 +112,12 @@ public class Buoyancy : MonoBehaviour
             && transform.position.x > water.bounds.min.x
             && transform.position.z > water.bounds.min.z)
             {
+                if (waterBody != null && !ReferenceEquals(waterBody.gameObject, water.gameObject))
+                {
+                    waterBody = null;
+                    isWaterBodySet = false;
+                }
+
                 if (!isWaterBodySet)
                 {
                     waterBody = water.GetComponent<WaterBody>();
@@ -104,17 +125,22 @@ public class Buoyancy : MonoBehaviour
                 }
                 else
                 {
-                    objectYValue = coll.bounds.center.y + offsetY;
+                    float objectYValue = coll.bounds.center.y + offsetY;
                     yBound = waterBody.GetYBound();
                     if (objectYValue < yBound)
                     {
-                        buoyantForceMass = buoyantForce * rb.mass;
-                        underWaterBuoyantForce = Mathf.Clamp01((yBound - objectYValue) * depthPower);
-                        buoyency = buoyantForceMass + (buoyantForceMass * underWaterBuoyantForce);
+                        float buoyantForceMass = buoyantForce * rb.mass;
+                        float underWaterBuoyantForce = Mathf.Clamp01((yBound - objectYValue) * depthPower); //can be inline below
+                        float buoyency = buoyantForceMass + (buoyantForceMass * underWaterBuoyantForce); //can be inline below
                         rb.AddForce(0f, buoyency, 0f);
                     }
                 }
             }
         }
+    }
+
+    private void OnTriggerExit(Collider water)
+    {
+        if (water.CompareTag(waterVolumeTag)) waterCount--;
     }
 }

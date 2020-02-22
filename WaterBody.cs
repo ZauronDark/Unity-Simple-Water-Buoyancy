@@ -36,16 +36,15 @@ public class WaterBody : MonoBehaviour
     private Collider coll;
 
 
-
     private void Start()
     {
         coll = GetComponent<Collider>();
     }
 
     //Get Surface level of the water
-    public ref readonly float GetYBound()
+    public float GetYBound()
     {
         if (!customSurfaceLevel) surfaceLevel = coll.bounds.max.y;
-        return ref surfaceLevel;
+        return surfaceLevel;
     }
 }
